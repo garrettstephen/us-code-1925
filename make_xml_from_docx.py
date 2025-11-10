@@ -25,6 +25,14 @@ def normalize(s: str) -> str:
     s = re.sub(r"\s+", " ", s)
     return s.strip()
 
+def format_section_body(text: str) -> str:
+    """Add spacing after subsection markers (a), (b), (1), (2), etc."""
+    # Add space after patterns like "(a)", "(b)", "(1)", "(2)" if not already present
+    text = re.sub(r'\(([a-z0-9]+)\)(?=[A-Z])', r'(\1) ', text)
+    # Ensure single space after these markers
+    text = re.sub(r'\(([a-z0-9]+)\)\s+', r'(\1) ', text)
+    return text
+
 def build_title_name(docx_path: Path, paragraphs):
     title_display = None
     title_num = None
@@ -79,7 +87,7 @@ def to_xml_tree(docx_path: Path):
             start_chapter("0", "UNSPECIFIED")
         s = ET.SubElement(current_chapter, "Section")
         s.set("name", f"{num}. {title.strip()}")
-        s.text = body.strip()
+        s.text = format_section_body(body.strip())
 
     # Parse chapters + sections
     while i < len(paras):
