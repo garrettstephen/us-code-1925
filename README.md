@@ -17,6 +17,8 @@ Currently includes the following titles from the 1925 US Code:
 - **Title 5** — Executive Departments and Government Officers and Employees
 - **Title 6** — Official and Penal Bonds
 - **Title 7** — Agriculture
+- **Title 8** — Aliens and Citizenship
+- **Title 9** — Arbitration
 
 ## ✨ Features
 
