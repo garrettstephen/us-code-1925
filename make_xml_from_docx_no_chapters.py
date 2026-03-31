@@ -4,7 +4,8 @@ from pathlib import Path
 
 # --- Patterns for titles without chapters ---
 RE_TITLE_LINE = re.compile(r'^TITLE\s+(\d+)\.\s*—\s*(.+?)\s*$', re.IGNORECASE)
-RE_SECTION_INLINE = re.compile(r'^(\d+)\.\s*(.+?)\s*[.—-]\s*(.+)$')
+# Match section number, title (up to em dash), and body text after em dash
+RE_SECTION_INLINE = re.compile(r'^(\d+)\.\s*(.+?)\s*—\s*(.+)$')
 RE_SECTION_HEADER = re.compile(r'^(\d+)\.\s')
 
 def iter_docx_paragraph_text(docx_path: Path):
@@ -90,14 +91,7 @@ def to_xml_tree(docx_path: Path):
         # Try inline section format: "1. Section Title — Body text"
         sm = RE_SECTION_INLINE.match(line)
         if sm:
-            add_section(sm.group(1), sm.group(2), sm.group(3))
-            i += 1
-            continue
-
-        # Multi-paragraph section: "1. Section Title — First body line" followed by more body lines
-        m = re.match(r'^(\d+)\.\s*(.+?)\s*[.—-]\s*(.*)$', line)
-        if m:
-            num, sec_title, first_body = m.groups()
+            num, sec_title, first_body = sm.groups()
             body_lines = [first_body] if first_body else []
             j = i + 1
             # Gather subsequent paragraphs until we hit another section

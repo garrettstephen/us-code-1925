@@ -173,47 +173,6 @@
             border-color: #A0522D;
         }
 
-        .search-container {
-            margin-bottom: 30px;
-            text-align: center;
-        }
-
-        .search-box {
-            padding: 10px;
-            font-size: 16px;
-            border: 2px solid #8B4513;
-            border-radius: 25px;
-            width: 300px;
-            outline: none;
-            transition: border-color 0.3s ease;
-        }
-
-        .search-box:focus {
-            border-color: #A0522D;
-        }
-
-        .highlight {
-            background-color: #a5c9d6;
-            padding: 2px 4px;
-            border-radius: 3px;
-        }
-
-        .toggle-all {
-            background: #8B4513;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            margin-left: 10px;
-            transition: background 0.3s ease;
-        }
-
-        .toggle-all:hover {
-            background: #A0522D;
-        }
-
         .chapter-table {
             background: white;
             border: 2px solid #8B4513;
@@ -274,11 +233,7 @@
             }
             
             .header h1 {
-                font-size: 2em;
-            }
-            
-            .search-box {
-                width: 250px;
+                font-size: 1.8em;
             }
 
             .chapter-table-grid {
@@ -290,29 +245,14 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>United States Code (1925)</h1>
+            <h1>United States Code (1926)</h1>
             <div class="subtitle" id="titleSubtitle">Select a title to view</div>
         </div>
 
         <div class="title-selector">
             <select class="title-select" id="titleSelect">
-                <option value="">Select a Title</option>
-                <option value="Title_1.xml">Title 1 — General Provisions</option>
-                <option value="Title_2.xml">Title 2 — The Congress</option>
-                <option value="Title_3.xml">Title 3 — The President</option>
-                <option value="Title_4.xml">Title 4 — Flag and Seal, Seat of Government, and the States</option>
-                <option value="Title_5.xml">Title 5 — Executive Departments and Government Officers and Employees</option>
-                <option value="Title_6.xml">Title 6 — Official and Penal Bonds</option>
-                <option value="Title_7.xml">Title 7 — Agriculture</option>
-                <option value="Title_8.xml">Title 8 — Aliens and Nationality</option>
-                <option value="Title_9.xml">Title 9 — Arbitration</option>
-                <option value="Title_10.xml">Title 10 — Armed Forces</option>
+                <option value="">Loading titles...</option>
             </select>
-        </div>
-
-        <div class="search-container" id="searchContainer" style="display: none;">
-            <input type="text" class="search-box" placeholder="Search sections..." id="searchBox">
-            <button class="toggle-all" id="toggleAllBtn" onclick="toggleAllChapters()">Toggle All</button>
         </div>
 
         <div id="content">
@@ -322,6 +262,94 @@
 
     <script>
         let currentXmlData = null;
+        let availableTitles = [];
+
+        // Check if a file exists by trying to load it
+        async function checkFileExists(filename) {
+            try {
+                const response = await fetch(filename, { method: 'HEAD' });
+                return response.ok;
+            } catch {
+                // If fetch fails, try XMLHttpRequest
+                try {
+                    return await new Promise((resolve) => {
+                        const xhr = new XMLHttpRequest();
+                        xhr.open('HEAD', filename, true);
+                        xhr.onreadystatechange = function() {
+                            if (xhr.readyState === 4) {
+                                resolve(xhr.status === 200 || xhr.status === 0);
+                            }
+                        };
+                        xhr.onerror = () => resolve(false);
+                        xhr.send();
+                    });
+                } catch {
+                    return false;
+                }
+            }
+        }
+
+        // Get title name from XML file
+        async function getTitleName(filename) {
+            try {
+                const xmlText = await loadLocalFile(filename);
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+                const titleElement = xmlDoc.querySelector('Title');
+                if (titleElement) {
+                    const titleName = titleElement.getAttribute('name');
+                    return titleName || filename.replace('.xml', '');
+                }
+            } catch (error) {
+                console.log(`Could not get title name from ${filename}`);
+            }
+            return filename.replace('.xml', '');
+        }
+
+        // Detect available title files (Title_1.xml through Title_50.xml)
+        async function detectAvailableTitles() {
+            const titleSelect = document.getElementById('titleSelect');
+            titleSelect.innerHTML = '<option value="">Detecting titles...</option>';
+            
+            const detectedTitles = [];
+            let consecutiveMisses = 0;
+            const maxConsecutiveMisses = 3; // Stop after 3 consecutive missing files
+            
+            // Check for Title_1.xml through Title_50.xml
+            for (let i = 1; i <= 50; i++) {
+                const filename = `Title_${i}.xml`;
+                const exists = await checkFileExists(filename);
+                
+                if (exists) {
+                    consecutiveMisses = 0; // Reset counter
+                    const titleName = await getTitleName(filename);
+                    detectedTitles.push({ filename, titleName, number: i });
+                } else {
+                    consecutiveMisses++;
+                    // Stop checking if we haven't found files in a while
+                    if (consecutiveMisses >= maxConsecutiveMisses && i > 15) {
+                        break;
+                    }
+                }
+            }
+            
+            // Populate dropdown
+            titleSelect.innerHTML = '<option value="">Select a Title</option>';
+            detectedTitles.forEach(title => {
+                const option = document.createElement('option');
+                option.value = title.filename;
+                option.textContent = title.titleName;
+                titleSelect.appendChild(option);
+            });
+            
+            availableTitles = detectedTitles;
+            
+            if (detectedTitles.length === 0) {
+                titleSelect.innerHTML = '<option value="">No titles found</option>';
+            }
+            
+            return detectedTitles;
+        }
 
         // Load and parse XML file
         async function loadXMLFile(filename) {
@@ -719,8 +747,6 @@ Solutions:
         function renderContent() {
             if (!currentXmlData) {
                 document.getElementById('content').innerHTML = '<p style="text-align: center; color: #666; font-style: italic;">Please select a title to view its contents.</p>';
-                document.getElementById('toggleAllBtn').style.display = 'none';
-                document.getElementById('searchContainer').style.display = 'none';
                 return;
             }
 
@@ -728,17 +754,6 @@ Solutions:
             container.innerHTML = '';
 
             const hasMultipleChapters = currentXmlData.chapters.length > 1;
-            
-            // Show search container when a title is selected
-            document.getElementById('searchContainer').style.display = 'block';
-            
-            // Show/hide toggle button based on whether there are multiple chapters
-            const toggleBtn = document.getElementById('toggleAllBtn');
-            if (hasMultipleChapters) {
-                toggleBtn.style.display = 'inline-block';
-            } else {
-                toggleBtn.style.display = 'none';
-            }
 
             // Add chapter table if there are multiple chapters
             if (hasMultipleChapters) {
@@ -878,81 +893,6 @@ Solutions:
             }
         }
 
-        // Toggle all chapters
-        function toggleAllChapters() {
-            const headers = document.querySelectorAll('.chapter-header');
-            const contents = document.querySelectorAll('.chapter-content');
-            const allChapters = document.querySelectorAll('.chapter');
-            
-            // Check if any chapters are open
-            const anyOpen = Array.from(contents).some(content => !content.classList.contains('collapsed'));
-            
-            // If any are open, close all; otherwise, open all and make all visible
-            headers.forEach(header => {
-                if (anyOpen) {
-                    header.classList.add('collapsed');
-                } else {
-                    header.classList.remove('collapsed');
-                }
-            });
-            
-            contents.forEach(content => {
-                if (anyOpen) {
-                    content.classList.add('collapsed');
-                } else {
-                    content.classList.remove('collapsed');
-                }
-            });
-            
-            // Make all chapters visible when opening all
-            allChapters.forEach(chapter => {
-                if (!anyOpen) {
-                    chapter.classList.add('visible');
-                } else {
-                    chapter.classList.remove('visible');
-                }
-            });
-        }
-
-        // Setup search functionality
-        function setupSearch() {
-            const searchBox = document.getElementById('searchBox');
-            searchBox.addEventListener('input', function() {
-                const searchTerm = this.value.toLowerCase();
-                const sections = document.querySelectorAll('.section');
-                
-                sections.forEach(section => {
-                    const title = section.querySelector('.section-title').textContent.toLowerCase();
-                    const content = section.querySelector('.section-content').textContent.toLowerCase();
-                    const number = section.querySelector('.section-number').textContent.toLowerCase();
-                    
-                    if (title.includes(searchTerm) || content.includes(searchTerm) || number.includes(searchTerm)) {
-                        section.style.display = 'block';
-                        highlightText(section, searchTerm);
-                        
-                        // Open and show the chapter containing this section
-                        const chapter = section.closest('.chapter');
-                        const chapterContent = chapter.querySelector('.chapter-content');
-                        const chapterHeader = chapter.querySelector('.chapter-header');
-                        chapterContent.classList.remove('collapsed');
-                        chapterHeader.classList.remove('collapsed');
-                        chapter.classList.add('visible'); // Make chapter visible during search
-                    } else {
-                        section.style.display = searchTerm ? 'none' : 'block';
-                        removeHighlight(section);
-                    }
-                });
-                
-                // If search is cleared, hide all chapters again (for titles with chapter tables)
-                if (!searchTerm && currentXmlData && currentXmlData.chapters.length > 1) {
-                    const allChapters = document.querySelectorAll('.chapter');
-                    allChapters.forEach(chapter => {
-                        chapter.classList.remove('visible');
-                    });
-                }
-            });
-        }
-
         // Handle title selection
         function handleTitleChange() {
             const titleSelect = document.getElementById('titleSelect');
@@ -966,7 +906,6 @@ Solutions:
                         currentXmlData = data;
                         titleSubtitle.textContent = data.title;
                         renderContent();
-                        setupSearch();
                     } else {
                         titleSubtitle.textContent = 'Error loading title';
                         currentXmlData = null;
@@ -980,50 +919,14 @@ Solutions:
             }
         }
 
-        // Highlight search terms
-        function highlightText(element, searchTerm) {
-            if (!searchTerm) return;
-            
-            const walker = document.createTreeWalker(
-                element,
-                NodeFilter.SHOW_TEXT,
-                null,
-                false
-            );
-            
-            const textNodes = [];
-            let node;
-            while (node = walker.nextNode()) {
-                textNodes.push(node);
-            }
-            
-            textNodes.forEach(textNode => {
-                const text = textNode.textContent;
-                const regex = new RegExp(`(${searchTerm})`, 'gi');
-                if (regex.test(text)) {
-                    const highlightedText = text.replace(regex, '<span class="highlight">$1</span>');
-                    const span = document.createElement('span');
-                    span.innerHTML = highlightedText;
-                    textNode.parentNode.replaceChild(span, textNode);
-                }
-            });
-        }
-
-        // Remove highlights
-        function removeHighlight(element) {
-            const highlights = element.querySelectorAll('.highlight');
-            highlights.forEach(highlight => {
-                const parent = highlight.parentNode;
-                parent.replaceChild(document.createTextNode(highlight.textContent), highlight);
-                parent.normalize();
-            });
-        }
-
         // Initialize the page
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             const titleSelect = document.getElementById('titleSelect');
             titleSelect.addEventListener('change', handleTitleChange);
             renderContent();
+            
+            // Detect and populate available titles
+            await detectAvailableTitles();
         });
     </script>
 </body>
