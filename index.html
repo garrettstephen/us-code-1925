@@ -401,7 +401,8 @@
             }
         };
 
-        const CURRENT_SUFFIXES = ['', 'A'];
+        const CURRENT_SUFFIXES = [''];
+        const CURRENT_OPTIONAL_SUFFIX_NUMBERS = new Set([5, 11]);
         const GROUP_TAGS = ['subtitle', 'part', 'subpart', 'chapter', 'subchapter'];
         const SKIP_SECTION_ANCESTORS = ['section', 'note', 'notes', 'toc', 'layout', 'appendix'];
 
@@ -450,6 +451,26 @@
             }
 
             return `Current US Code/usc${String(number).padStart(2, '0')}${suffix}.xml`;
+        }
+
+        function buildCurrentFilenameCandidates(titleId) {
+            const primary = buildCurrentFilename(titleId);
+            if (!primary) {
+                return [];
+            }
+
+            const { number, suffix } = splitTitleId(titleId);
+            const candidates = [primary];
+
+            // Some source files use a lowercase suffix (for example: usc11a.xml).
+            if (suffix === 'A') {
+                const lowerSuffixVariant = `Current US Code/usc${String(number).padStart(2, '0')}${suffix.toLowerCase()}.xml`;
+                if (lowerSuffixVariant !== primary) {
+                    candidates.push(lowerSuffixVariant);
+                }
+            }
+
+            return candidates;
         }
 
         function compareTitleEntries(left, right) {
@@ -690,14 +711,22 @@
                 }
 
                 let foundCurrentThisRound = false;
-                for (const suffix of CURRENT_SUFFIXES) {
-                    const currentId = normalizeTitleId(i, suffix);
-                    const currentFilename = buildCurrentFilename(currentId);
-                    const currentExists = currentFilename ? await checkFileExists(currentFilename) : false;
+                const suffixesToCheck = [...CURRENT_SUFFIXES];
+                if (CURRENT_OPTIONAL_SUFFIX_NUMBERS.has(i)) {
+                    suffixesToCheck.push('A');
+                }
 
-                    if (currentExists) {
-                        foundCurrentThisRound = true;
-                        upsertTitleEntry(titleMap, currentId, 'current', currentFilename, await getTitleName(currentFilename));
+                for (const suffix of suffixesToCheck) {
+                    const currentId = normalizeTitleId(i, suffix);
+                    const filenameCandidates = buildCurrentFilenameCandidates(currentId);
+
+                    for (const currentFilename of filenameCandidates) {
+                        const currentExists = await checkFileExists(currentFilename);
+                        if (currentExists) {
+                            foundCurrentThisRound = true;
+                            upsertTitleEntry(titleMap, currentId, 'current', currentFilename, await getTitleName(currentFilename));
+                            break;
+                        }
                     }
                 }
 
