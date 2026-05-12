@@ -5,6 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>1925 US Code Viewer</title>
     <style>
+        :root {
+            --paper: #f6f1e8;
+            --ink: #2f2720;
+            --panel: rgba(255, 252, 247, 0.9);
+            --line: rgba(109, 74, 38, 0.18);
+            --bronze: #8b4513;
+            --bronze-deep: #6d3f18;
+            --navy: #1f3a5f;
+            --muted: #6b625a;
+            --shadow: 0 18px 40px rgba(45, 31, 17, 0.12);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -14,46 +26,121 @@
         body {
             font-family: 'Georgia', 'Times New Roman', serif;
             line-height: 1.6;
-            color: #333;
-            background-color: #f9f9f9;
+            color: var(--ink);
+            background:
+                radial-gradient(circle at top left, rgba(139, 69, 19, 0.12), transparent 30%),
+                radial-gradient(circle at top right, rgba(31, 58, 95, 0.1), transparent 28%),
+                linear-gradient(180deg, #f7f2ea 0%, #efe6d7 100%);
             padding: 20px;
         }
 
         .container {
             max-width: 1000px;
             margin: 0 auto;
-            background: white;
+            background: var(--panel);
             padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            box-shadow: var(--shadow);
         }
 
         .header {
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 28px;
             padding-bottom: 20px;
-            border-bottom: 3px solid #8B4513;
+            border-bottom: 3px solid rgba(139, 69, 19, 0.2);
         }
 
         .header h1 {
-            color: #8B4513;
+            color: var(--bronze);
             font-size: 2.5em;
             margin-bottom: 10px;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+            letter-spacing: 0.03em;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.08);
         }
 
         .header .subtitle {
             font-size: 1.2em;
-            color: #666;
+            color: var(--muted);
             font-style: italic;
+        }
+
+        .toolbar {
+            display: grid;
+            grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
+            gap: 18px;
+            margin-bottom: 28px;
+            align-items: stretch;
+        }
+
+        .toolbar-card {
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 18px;
+            box-shadow: 0 12px 28px rgba(69, 47, 27, 0.08);
+        }
+
+        .toolbar-label {
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--muted);
+            margin-bottom: 10px;
+        }
+
+        .source-switch {
+            display: inline-flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .source-button {
+            border: 1px solid transparent;
+            border-radius: 999px;
+            padding: 10px 16px;
+            font: inherit;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+            color: white;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        }
+
+        .source-button:hover {
+            transform: translateY(-1px);
+        }
+
+        .source-button[data-source="historical"] {
+            background: linear-gradient(135deg, var(--bronze), #b46d36);
+        }
+
+        .source-button[data-source="current"] {
+            background: linear-gradient(135deg, var(--navy), #315582);
+        }
+
+        .source-button.active {
+            border-color: rgba(255, 255, 255, 0.85);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3), 0 12px 24px rgba(0, 0, 0, 0.16);
+        }
+
+        .source-button:not(.active) {
+            opacity: 0.7;
+        }
+
+        .source-meta {
+            margin-top: 12px;
+            color: var(--muted);
+            font-size: 0.95rem;
+            min-height: 1.4em;
         }
 
         .chapter {
             margin-bottom: 40px;
             border: 1px solid #ddd;
-            border-radius: 5px;
+            border-radius: 14px;
             overflow: hidden;
             display: none; /* Hidden by default when there's a chapter table */
+            box-shadow: 0 10px 24px rgba(58, 42, 30, 0.06);
         }
 
         .chapter.visible {
@@ -153,19 +240,20 @@
         }
 
         .title-selector {
-            margin-bottom: 20px;
-            text-align: center;
+            margin-bottom: 0;
         }
 
         .title-select {
-            padding: 10px;
+            width: 100%;
+            padding: 12px 14px;
             font-size: 16px;
-            border: 2px solid #8B4513;
-            border-radius: 5px;
-            background: white;
+            border: 2px solid rgba(139, 69, 19, 0.35);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.95);
             color: #8B4513;
             cursor: pointer;
             min-width: 200px;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.06);
         }
 
         .title-select:focus {
@@ -175,11 +263,11 @@
 
         .chapter-table {
             background: white;
-            border: 2px solid #8B4513;
-            border-radius: 8px;
+            border: 2px solid rgba(139, 69, 19, 0.6);
+            border-radius: 14px;
             padding: 15px;
             margin-bottom: 25px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 24px rgba(58, 42, 30, 0.08);
         }
 
         .chapter-table h3 {
@@ -201,7 +289,7 @@
             display: flex;
             align-items: flex-start;
             padding: 8px 10px;
-            background: #f9f9f9;
+            background: linear-gradient(180deg, #fcfaf7 0%, #f4ede2 100%);
             border-radius: 5px;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -227,6 +315,27 @@
             font-size: 0.9em;
         }
 
+        .empty-state {
+            background: rgba(255, 255, 255, 0.84);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 28px;
+            text-align: center;
+            box-shadow: 0 12px 28px rgba(69, 47, 27, 0.08);
+        }
+
+        .empty-state h3 {
+            color: var(--bronze-deep);
+            margin-bottom: 10px;
+            font-size: 1.35rem;
+        }
+
+        .empty-state p {
+            color: var(--muted);
+            max-width: 620px;
+            margin: 0 auto;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 20px;
@@ -234,6 +343,10 @@
             
             .header h1 {
                 font-size: 1.8em;
+            }
+
+            .toolbar {
+                grid-template-columns: 1fr;
             }
 
             .chapter-table-grid {
@@ -245,14 +358,26 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>United States Code (1926)</h1>
-            <div class="subtitle" id="titleSubtitle">Select a title to view</div>
+            <h1>United States Code Viewer</h1>
+            <div class="subtitle" id="titleSubtitle">Switch between the 1926 compilation and the current U.S. Code text.</div>
         </div>
 
-        <div class="title-selector">
-            <select class="title-select" id="titleSelect">
-                <option value="">Loading titles...</option>
-            </select>
+        <div class="toolbar">
+            <div class="toolbar-card">
+                <div class="toolbar-label">Edition</div>
+                <div class="source-switch" id="sourceSwitch">
+                    <button class="source-button active" data-source="historical" type="button">1926 Edition</button>
+                    <button class="source-button" data-source="current" type="button">Current U.S. Code</button>
+                </div>
+                <div class="source-meta" id="sourceMeta">Loading available titles...</div>
+            </div>
+
+            <div class="toolbar-card title-selector">
+                <div class="toolbar-label">Title</div>
+                <select class="title-select" id="titleSelect">
+                    <option value="">Loading titles...</option>
+                </select>
+            </div>
         </div>
 
         <div id="content">
@@ -263,6 +388,209 @@
     <script>
         let currentXmlData = null;
         let availableTitles = [];
+        let currentSource = 'historical';
+
+        const SOURCE_CONFIG = {
+            historical: {
+                label: '1926 Edition',
+                emptyMessage: 'This title is not available in the 1926 XML files.'
+            },
+            current: {
+                label: 'Current U.S. Code',
+                emptyMessage: 'This title is not available in the current U.S. Code XML files.'
+            }
+        };
+
+        const CURRENT_SUFFIXES = ['', 'A'];
+        const GROUP_TAGS = ['subtitle', 'part', 'subpart', 'chapter', 'subchapter'];
+        const SKIP_SECTION_ANCESTORS = ['section', 'note', 'notes', 'toc', 'layout', 'appendix'];
+
+        function normalizeDisplayText(text) {
+            return (text || '')
+                .replace(/\u00a0|\u2002|\u2003|\u2009|\u202f/g, ' ')
+                .replace(/â€”/g, '—')
+                .replace(/â€“/g, '–')
+                .replace(/â€¯/g, ' ')
+                .replace(/â€€/g, ' ')
+                .replace(/Â§/g, '§')
+                .replace(/Â/g, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function normalizeTitleId(number, suffix = '') {
+            return `${parseInt(number, 10)}${suffix.toUpperCase()}`;
+        }
+
+        function splitTitleId(titleId) {
+            const match = String(titleId).match(/^(\d+)([A-Z]?)$/i);
+            if (!match) {
+                return { number: 0, suffix: '' };
+            }
+
+            return {
+                number: parseInt(match[1], 10),
+                suffix: match[2].toUpperCase()
+            };
+        }
+
+        function buildHistoricalFilename(titleId) {
+            const { number, suffix } = splitTitleId(titleId);
+            if (!number || suffix) {
+                return null;
+            }
+
+            return `Title_${number}.xml`;
+        }
+
+        function buildCurrentFilename(titleId) {
+            const { number, suffix } = splitTitleId(titleId);
+            if (!number) {
+                return null;
+            }
+
+            return `Current US Code/usc${String(number).padStart(2, '0')}${suffix}.xml`;
+        }
+
+        function compareTitleEntries(left, right) {
+            const leftParts = splitTitleId(left.id);
+            const rightParts = splitTitleId(right.id);
+
+            if (leftParts.number !== rightParts.number) {
+                return leftParts.number - rightParts.number;
+            }
+
+            return leftParts.suffix.localeCompare(rightParts.suffix);
+        }
+
+        function getFallbackTitleLabel(titleId) {
+            const { number, suffix } = splitTitleId(titleId);
+            return suffix ? `Title ${number}${suffix}` : `Title ${number}`;
+        }
+
+        function getEntryLabel(entry) {
+            return entry?.label || getFallbackTitleLabel(entry?.id || '');
+        }
+
+        function getAvailabilityLabel(entry) {
+            if (entry.historical && entry.current) {
+                return 'Both editions';
+            }
+
+            return entry.historical ? '1926 only' : 'Current only';
+        }
+
+        function getTitleEntry(titleId) {
+            return availableTitles.find(entry => entry.id === titleId) || null;
+        }
+
+        function getSelectedEntry() {
+            const selectedId = document.getElementById('titleSelect').value;
+            return selectedId ? getTitleEntry(selectedId) : null;
+        }
+
+        function getActiveSourceFile(entry) {
+            return entry ? entry[currentSource] || null : null;
+        }
+
+        function getElementsByLocalName(root, name) {
+            return Array.from(root.getElementsByTagNameNS('*', name));
+        }
+
+        function getDirectChildrenByLocalName(element, name) {
+            return Array.from(element.children).filter(child => child.localName === name);
+        }
+
+        function getDirectChildByLocalName(element, name) {
+            return getDirectChildrenByLocalName(element, name)[0] || null;
+        }
+
+        function getDirectChildText(element, name) {
+            const child = getDirectChildByLocalName(element, name);
+            return child ? normalizeDisplayText(child.textContent) : '';
+        }
+
+        function hasAncestorWithLocalName(element, names, stopAt = null) {
+            let parent = element.parentElement;
+
+            while (parent && parent !== stopAt) {
+                if (names.includes(parent.localName)) {
+                    return true;
+                }
+                parent = parent.parentElement;
+            }
+
+            return false;
+        }
+
+        function findClosestGroupingAncestor(element, stopAt) {
+            let parent = element.parentElement;
+
+            while (parent && parent !== stopAt) {
+                if (GROUP_TAGS.includes(parent.localName)) {
+                    return parent;
+                }
+                parent = parent.parentElement;
+            }
+
+            return null;
+        }
+
+        function buildGroupName(groupElement) {
+            if (!groupElement) {
+                return 'Sections';
+            }
+
+            const num = getDirectChildText(groupElement, 'num');
+            const heading = getDirectChildText(groupElement, 'heading');
+            const groupName = normalizeDisplayText([num, heading].filter(Boolean).join(' '));
+            return groupName || groupElement.localName.replace(/^./, character => character.toUpperCase());
+        }
+
+        function extractHistoricalSection(sectionEl) {
+            const sectionName = sectionEl.getAttribute('name') || '';
+            const sectionContent = normalizeDisplayText(sectionEl.textContent);
+            const match = sectionName.match(/^([^.]*)\.\s*(.+)$/);
+            let number = '';
+            let title = sectionName;
+
+            if (match) {
+                number = normalizeDisplayText(match[1]);
+                title = normalizeDisplayText(match[2]);
+            }
+
+            const citationMatch = sectionContent.match(/\(([^)]+)\)\.?\s*$/);
+            let content = sectionContent;
+            let citation = '';
+
+            if (citationMatch) {
+                citation = '(' + citationMatch[1] + ')';
+                content = normalizeDisplayText(sectionContent.replace(/\s*\([^)]+\)\.?\s*$/, ''));
+            }
+
+            return { number, title, content, citation };
+        }
+
+        function extractUSLMSection(sectionEl) {
+            const number = getDirectChildText(sectionEl, 'num').replace(/^\[|\]$/g, '');
+            const title = getDirectChildText(sectionEl, 'heading') || 'Untitled section';
+            let content = normalizeDisplayText(sectionEl.textContent);
+
+            if (number && content.startsWith(number)) {
+                content = normalizeDisplayText(content.slice(number.length));
+            }
+
+            if (title && content.startsWith(title)) {
+                content = normalizeDisplayText(content.slice(title.length));
+            }
+
+            return {
+                number: number || '§',
+                title,
+                content: content || 'No section text extracted from this file.',
+                citation: ''
+            };
+        }
 
         // Check if a file exists by trying to load it
         async function checkFileExists(filename) {
@@ -295,10 +623,9 @@
                 const xmlText = await loadLocalFile(filename);
                 const parser = new DOMParser();
                 const xmlDoc = parser.parseFromString(xmlText, "text/xml");
-                const titleElement = xmlDoc.querySelector('Title');
-                if (titleElement) {
-                    const titleName = titleElement.getAttribute('name');
-                    return titleName || filename.replace('.xml', '');
+                const parsed = parseXMLToObject(xmlDoc);
+                if (parsed && parsed.title) {
+                    return parsed.title;
                 }
             } catch (error) {
                 console.log(`Could not get title name from ${filename}`);
@@ -306,49 +633,88 @@
             return filename.replace('.xml', '');
         }
 
-        // Detect available title files (Title_1.xml through Title_50.xml)
+        function upsertTitleEntry(titleMap, titleId, sourceKey, filename, titleName) {
+            const entry = titleMap.get(titleId) || {
+                id: titleId,
+                label: '',
+                historical: null,
+                current: null
+            };
+
+            entry[sourceKey] = { filename, titleName };
+
+            if (!entry.label || sourceKey === 'historical') {
+                entry.label = titleName;
+            }
+
+            titleMap.set(titleId, entry);
+        }
+
+        function populateTitleSelect() {
+            const titleSelect = document.getElementById('titleSelect');
+            const previousValue = titleSelect.value;
+            titleSelect.innerHTML = '<option value="">Select a Title</option>';
+
+            availableTitles.forEach(entry => {
+                const option = document.createElement('option');
+                option.value = entry.id;
+                option.textContent = `${getEntryLabel(entry)} • ${getAvailabilityLabel(entry)}`;
+                titleSelect.appendChild(option);
+            });
+
+            if (previousValue && availableTitles.some(entry => entry.id === previousValue)) {
+                titleSelect.value = previousValue;
+            }
+        }
+
+        // Detect available title files across both XML sets
         async function detectAvailableTitles() {
             const titleSelect = document.getElementById('titleSelect');
             titleSelect.innerHTML = '<option value="">Detecting titles...</option>';
-            
-            const detectedTitles = [];
-            let consecutiveMisses = 0;
-            const maxConsecutiveMisses = 3; // Stop after 3 consecutive missing files
-            
-            // Check for Title_1.xml through Title_50.xml
+
+            const titleMap = new Map();
+            let consecutiveHistoricalMisses = 0;
+            let consecutiveCurrentMisses = 0;
+            const maxConsecutiveMisses = 3;
+
             for (let i = 1; i <= 50; i++) {
-                const filename = `Title_${i}.xml`;
-                const exists = await checkFileExists(filename);
-                
-                if (exists) {
-                    consecutiveMisses = 0; // Reset counter
-                    const titleName = await getTitleName(filename);
-                    detectedTitles.push({ filename, titleName, number: i });
+                const historicalFilename = buildHistoricalFilename(i);
+                const historicalExists = historicalFilename ? await checkFileExists(historicalFilename) : false;
+
+                if (historicalExists) {
+                    consecutiveHistoricalMisses = 0;
+                    upsertTitleEntry(titleMap, normalizeTitleId(i), 'historical', historicalFilename, await getTitleName(historicalFilename));
                 } else {
-                    consecutiveMisses++;
-                    // Stop checking if we haven't found files in a while
-                    if (consecutiveMisses >= maxConsecutiveMisses && i > 15) {
-                        break;
+                    consecutiveHistoricalMisses++;
+                }
+
+                let foundCurrentThisRound = false;
+                for (const suffix of CURRENT_SUFFIXES) {
+                    const currentId = normalizeTitleId(i, suffix);
+                    const currentFilename = buildCurrentFilename(currentId);
+                    const currentExists = currentFilename ? await checkFileExists(currentFilename) : false;
+
+                    if (currentExists) {
+                        foundCurrentThisRound = true;
+                        upsertTitleEntry(titleMap, currentId, 'current', currentFilename, await getTitleName(currentFilename));
                     }
                 }
+
+                consecutiveCurrentMisses = foundCurrentThisRound ? 0 : consecutiveCurrentMisses + 1;
+
+                if (i > 15 && consecutiveHistoricalMisses >= maxConsecutiveMisses && consecutiveCurrentMisses >= maxConsecutiveMisses) {
+                    break;
+                }
             }
-            
-            // Populate dropdown
-            titleSelect.innerHTML = '<option value="">Select a Title</option>';
-            detectedTitles.forEach(title => {
-                const option = document.createElement('option');
-                option.value = title.filename;
-                option.textContent = title.titleName;
-                titleSelect.appendChild(option);
-            });
-            
-            availableTitles = detectedTitles;
-            
-            if (detectedTitles.length === 0) {
+
+            availableTitles = Array.from(titleMap.values()).sort(compareTitleEntries);
+            populateTitleSelect();
+
+            if (availableTitles.length === 0) {
                 titleSelect.innerHTML = '<option value="">No titles found</option>';
             }
-            
-            return detectedTitles;
+
+            return availableTitles;
         }
 
         // Load and parse XML file
@@ -635,118 +1001,111 @@ Solutions:
             return null;
         }
 
-        // Parse XML document to JavaScript object
-        function parseXMLToObject(xmlDoc) {
+        function parseHistoricalXMLToObject(xmlDoc) {
             const titleElement = xmlDoc.querySelector('Title');
             if (!titleElement) return null;
 
-            const titleName = titleElement.getAttribute('name');
+            const titleName = normalizeDisplayText(titleElement.getAttribute('name'));
             const chapters = [];
-
-            const chapterElements = titleElement.querySelectorAll('Chapter');
+            const chapterElements = titleElement.querySelectorAll(':scope > Chapter');
             
             if (chapterElements.length > 0) {
-                // Title has chapters - parse normally
                 chapterElements.forEach(chapterEl => {
-                    const chapterName = chapterEl.getAttribute('name');
-                    const sections = [];
-
-                    const sectionElements = chapterEl.querySelectorAll('Section, section');
-                    sectionElements.forEach(sectionEl => {
-                        const sectionName = sectionEl.getAttribute('name');
-                        const sectionContent = sectionEl.textContent.trim();
-                        
-                        // Extract section number and title from the name attribute
-                        const match = sectionName.match(/^(\d+)\.\s*(.+)$/);
-                        let number = '';
-                        let title = sectionName;
-                        
-                        if (match) {
-                            number = match[1];
-                            title = match[2];
-                        }
-                        
-                        // Extract citation (text in parentheses at the end)
-                        const citationMatch = sectionContent.match(/\(([^)]+)\)\.?\s*$/);
-                        let content = sectionContent;
-                        let citation = '';
-                        
-                        if (citationMatch) {
-                            citation = '(' + citationMatch[1] + ')';
-                            content = sectionContent.replace(/\s*\([^)]+\)\.?\s*$/, '');
-                        }
-                        
-                        sections.push({
-                            number: number,
-                            title: title,
-                            content: content,
-                            citation: citation
-                        });
-                    });
+                    const sections = Array.from(chapterEl.querySelectorAll(':scope > Section, :scope > section'))
+                        .map(extractHistoricalSection);
 
                     if (sections.length > 0) {
                         chapters.push({
-                            name: chapterName,
-                            sections: sections
+                            name: normalizeDisplayText(chapterEl.getAttribute('name')),
+                            sections
                         });
                     }
                 });
             } else {
-                // No chapters - sections are directly under Title (like Title 4)
-                const sectionElements = titleElement.querySelectorAll('Section, section');
-                if (sectionElements.length > 0) {
-                    const sections = [];
-                    
-                    sectionElements.forEach(sectionEl => {
-                        const sectionName = sectionEl.getAttribute('name');
-                        const sectionContent = sectionEl.textContent.trim();
-                        
-                        // Extract section number and title from the name attribute
-                        const match = sectionName.match(/^(\d+)\.\s*(.+)$/);
-                        let number = '';
-                        let title = sectionName;
-                        
-                        if (match) {
-                            number = match[1];
-                            title = match[2];
-                        }
-                        
-                        // Extract citation (text in parentheses at the end)
-                        const citationMatch = sectionContent.match(/\(([^)]+)\)\.?\s*$/);
-                        let content = sectionContent;
-                        let citation = '';
-                        
-                        if (citationMatch) {
-                            citation = '(' + citationMatch[1] + ')';
-                            content = sectionContent.replace(/\s*\([^)]+\)\.?\s*$/, '');
-                        }
-                        
-                        sections.push({
-                            number: number,
-                            title: title,
-                            content: content,
-                            citation: citation
-                        });
-                    });
-                    
-                    // Create a single "chapter" containing all sections
+                const sections = Array.from(titleElement.querySelectorAll(':scope > Section, :scope > section'))
+                    .map(extractHistoricalSection);
+
+                if (sections.length > 0) {
                     chapters.push({
-                        name: "Sections",
-                        sections: sections
+                        name: 'Sections',
+                        sections
                     });
                 }
             }
 
             return {
                 title: titleName,
-                chapters: chapters
+                chapters,
+                sourceLabel: SOURCE_CONFIG.historical.label
             };
+        }
+
+        function parseCurrentUSLMToObject(xmlDoc) {
+            const main = getElementsByLocalName(xmlDoc, 'main')[0];
+            const titleElement = main ? getDirectChildByLocalName(main, 'title') : null;
+            if (!titleElement) return null;
+
+            const titleNum = getDirectChildText(titleElement, 'num').replace(/[—–-]\s*$/, '');
+            const titleHeading = getDirectChildText(titleElement, 'heading');
+            const chapterMap = new Map();
+
+            getElementsByLocalName(titleElement, 'section')
+                .filter(sectionEl => !hasAncestorWithLocalName(sectionEl, SKIP_SECTION_ANCESTORS, titleElement))
+                .forEach(sectionEl => {
+                    const groupElement = findClosestGroupingAncestor(sectionEl, titleElement);
+                    const key = groupElement
+                        ? (groupElement.getAttribute('identifier') || groupElement.getAttribute('id') || buildGroupName(groupElement))
+                        : 'sections';
+
+                    if (!chapterMap.has(key)) {
+                        chapterMap.set(key, {
+                            name: buildGroupName(groupElement),
+                            sections: []
+                        });
+                    }
+
+                    chapterMap.get(key).sections.push(extractUSLMSection(sectionEl));
+                });
+
+            return {
+                title: normalizeDisplayText([titleNum, titleHeading].filter(Boolean).join(' ')) || 'Current U.S. Code',
+                chapters: Array.from(chapterMap.values()),
+                sourceLabel: SOURCE_CONFIG.current.label
+            };
+        }
+
+        // Parse XML document to JavaScript object
+        function parseXMLToObject(xmlDoc) {
+            if (xmlDoc.querySelector('Title')) {
+                return parseHistoricalXMLToObject(xmlDoc);
+            }
+
+            if (xmlDoc.documentElement && xmlDoc.documentElement.localName === 'uscDoc') {
+                return parseCurrentUSLMToObject(xmlDoc);
+            }
+
+            return null;
         }
 
         // Render content to HTML
         function renderContent() {
             if (!currentXmlData) {
-                document.getElementById('content').innerHTML = '<p style="text-align: center; color: #666; font-style: italic;">Please select a title to view its contents.</p>';
+                document.getElementById('content').innerHTML = `
+                    <div class="empty-state">
+                        <h3>Select a title</h3>
+                        <p>Pick a title, then flip between editions to compare your 1926 XML against the current U.S. Code files.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            if (currentXmlData.unavailable) {
+                document.getElementById('content').innerHTML = `
+                    <div class="empty-state">
+                        <h3>${currentXmlData.title}</h3>
+                        <p>${currentXmlData.message}</p>
+                    </div>
+                `;
                 return;
             }
 
@@ -761,7 +1120,7 @@ Solutions:
                 chapterTable.className = 'chapter-table';
                 
                 const tableTitle = document.createElement('h3');
-                tableTitle.textContent = 'Table of Chapters';
+                tableTitle.textContent = 'Table of Contents';
                 chapterTable.appendChild(tableTitle);
                 
                 const tableGrid = document.createElement('div');
@@ -856,6 +1215,65 @@ Solutions:
             });
         }
 
+        function updateSourceButtons() {
+            document.querySelectorAll('.source-button').forEach(button => {
+                button.classList.toggle('active', button.dataset.source === currentSource);
+            });
+        }
+
+        function updateSourceMeta() {
+            const sourceMeta = document.getElementById('sourceMeta');
+            const selectedEntry = getSelectedEntry();
+
+            if (!availableTitles.length) {
+                sourceMeta.textContent = 'No titles detected yet.';
+                return;
+            }
+
+            if (!selectedEntry) {
+                sourceMeta.textContent = `${availableTitles.length} titles detected. Current view: ${SOURCE_CONFIG[currentSource].label}.`;
+                return;
+            }
+
+            const alternateSource = currentSource === 'historical' ? 'current' : 'historical';
+            const currentAvailable = !!selectedEntry[currentSource];
+            const alternateAvailable = !!selectedEntry[alternateSource];
+
+            if (currentAvailable && alternateAvailable) {
+                sourceMeta.textContent = `${getEntryLabel(selectedEntry)} is available in both editions.`;
+            } else if (currentAvailable) {
+                sourceMeta.textContent = `${getEntryLabel(selectedEntry)} is only available in ${SOURCE_CONFIG[currentSource].label}.`;
+            } else if (alternateAvailable) {
+                sourceMeta.textContent = `${getEntryLabel(selectedEntry)} is unavailable in ${SOURCE_CONFIG[currentSource].label}, but available in ${SOURCE_CONFIG[alternateSource].label}.`;
+            } else {
+                sourceMeta.textContent = `${getEntryLabel(selectedEntry)} is unavailable in both detected editions.`;
+            }
+        }
+
+        function renderUnavailableTitle(entry) {
+            currentXmlData = {
+                unavailable: true,
+                title: getEntryLabel(entry),
+                message: SOURCE_CONFIG[currentSource].emptyMessage
+            };
+            document.getElementById('titleSubtitle').textContent = `${getEntryLabel(entry)} · ${SOURCE_CONFIG[currentSource].label}`;
+            updateSourceMeta();
+            renderContent();
+        }
+
+        function setSource(source) {
+            currentSource = source;
+            updateSourceButtons();
+            updateSourceMeta();
+
+            if (document.getElementById('titleSelect').value) {
+                handleTitleChange();
+            } else {
+                document.getElementById('titleSubtitle').textContent = 'Switch between the 1926 compilation and the current U.S. Code text.';
+                renderContent();
+            }
+        }
+
         // Toggle chapter visibility
         function toggleChapter(index) {
             const chapters = document.querySelectorAll('.chapter');
@@ -897,14 +1315,22 @@ Solutions:
         function handleTitleChange() {
             const titleSelect = document.getElementById('titleSelect');
             const titleSubtitle = document.getElementById('titleSubtitle');
-            const selectedFile = titleSelect.value;
+            const selectedEntry = getTitleEntry(titleSelect.value);
+            const selectedFile = getActiveSourceFile(selectedEntry);
             
-            if (selectedFile) {
+            if (titleSelect.value) {
+                if (!selectedFile) {
+                    renderUnavailableTitle(selectedEntry);
+                    return;
+                }
+
                 titleSubtitle.textContent = 'Loading...';
-                loadXMLFile(selectedFile).then(data => {
+                updateSourceMeta();
+                loadXMLFile(selectedFile.filename).then(data => {
                     if (data) {
                         currentXmlData = data;
-                        titleSubtitle.textContent = data.title;
+                        titleSubtitle.textContent = `${data.title} · ${SOURCE_CONFIG[currentSource].label}`;
+                        updateSourceMeta();
                         renderContent();
                     } else {
                         titleSubtitle.textContent = 'Error loading title';
@@ -913,8 +1339,9 @@ Solutions:
                     }
                 });
             } else {
-                titleSubtitle.textContent = 'Select a title to view';
+                titleSubtitle.textContent = 'Switch between the 1926 compilation and the current U.S. Code text.';
                 currentXmlData = null;
+                updateSourceMeta();
                 renderContent();
             }
         }
@@ -922,11 +1349,24 @@ Solutions:
         // Initialize the page
         document.addEventListener('DOMContentLoaded', async function() {
             const titleSelect = document.getElementById('titleSelect');
+            const sourceSwitch = document.getElementById('sourceSwitch');
+
             titleSelect.addEventListener('change', handleTitleChange);
+            sourceSwitch.addEventListener('click', event => {
+                const sourceButton = event.target.closest('.source-button');
+                if (!sourceButton) {
+                    return;
+                }
+
+                setSource(sourceButton.dataset.source);
+            });
+
             renderContent();
             
             // Detect and populate available titles
             await detectAvailableTitles();
+            updateSourceButtons();
+            updateSourceMeta();
         });
     </script>
 </body>
