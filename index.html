@@ -595,20 +595,21 @@
         // Check if a file exists by trying to load it
         async function checkFileExists(filename) {
             try {
-                const response = await fetch(filename, { method: 'HEAD' });
+                const response = await fetch(filename);
                 return response.ok;
-            } catch {
-                // If fetch fails, try XMLHttpRequest
+            } catch (err) {
+                // If fetch fails, try XMLHttpRequest with GET
                 try {
                     return await new Promise((resolve) => {
                         const xhr = new XMLHttpRequest();
-                        xhr.open('HEAD', filename, true);
+                        xhr.open('GET', filename, true);
                         xhr.onreadystatechange = function() {
                             if (xhr.readyState === 4) {
                                 resolve(xhr.status === 200 || xhr.status === 0);
                             }
                         };
                         xhr.onerror = () => resolve(false);
+                        xhr.onabort = () => resolve(false);
                         xhr.send();
                     });
                 } catch {
