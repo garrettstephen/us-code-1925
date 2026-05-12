@@ -596,8 +596,11 @@
         async function checkFileExists(filename) {
             try {
                 const response = await fetch(filename);
-                return response.ok;
+                const exists = response.ok;
+                console.log('checkFileExists fetch:', filename, exists);
+                return exists;
             } catch (err) {
+                console.log('checkFileExists fetch failed for', filename, '- trying XHR');
                 // If fetch fails, try XMLHttpRequest with GET
                 try {
                     return await new Promise((resolve) => {
@@ -605,14 +608,23 @@
                         xhr.open('GET', filename, true);
                         xhr.onreadystatechange = function() {
                             if (xhr.readyState === 4) {
-                                resolve(xhr.status === 200 || xhr.status === 0);
+                                const exists = xhr.status === 200 || xhr.status === 0;
+                                console.log('checkFileExists XHR:', filename, 'status:', xhr.status, 'exists:', exists);
+                                resolve(exists);
                             }
                         };
-                        xhr.onerror = () => resolve(false);
-                        xhr.onabort = () => resolve(false);
+                        xhr.onerror = () => {
+                            console.log('checkFileExists XHR error for:', filename);
+                            resolve(false);
+                        };
+                        xhr.onabort = () => {
+                            console.log('checkFileExists XHR abort for:', filename);
+                            resolve(false);
+                        };
                         xhr.send();
                     });
-                } catch {
+                } catch (e) {
+                    console.log('checkFileExists exception:', filename, e);
                     return false;
                 }
             }
@@ -678,11 +690,14 @@
             let consecutiveCurrentMisses = 0;
             const maxConsecutiveMisses = 3;
 
+            console.log('Starting title detection...');
+
             for (let i = 1; i <= 50; i++) {
                 const historicalFilename = buildHistoricalFilename(i);
                 const historicalExists = historicalFilename ? await checkFileExists(historicalFilename) : false;
 
                 if (historicalExists) {
+                    console.log('Found historical:', historicalFilename);
                     consecutiveHistoricalMisses = 0;
                     upsertTitleEntry(titleMap, normalizeTitleId(i), 'historical', historicalFilename, await getTitleName(historicalFilename));
                 } else {
@@ -696,6 +711,7 @@
                     const currentExists = currentFilename ? await checkFileExists(currentFilename) : false;
 
                     if (currentExists) {
+                        console.log('Found current:', currentFilename);
                         foundCurrentThisRound = true;
                         upsertTitleEntry(titleMap, currentId, 'current', currentFilename, await getTitleName(currentFilename));
                     }
@@ -704,6 +720,7 @@
                 consecutiveCurrentMisses = foundCurrentThisRound ? 0 : consecutiveCurrentMisses + 1;
 
                 if (i > 15 && consecutiveHistoricalMisses >= maxConsecutiveMisses && consecutiveCurrentMisses >= maxConsecutiveMisses) {
+                    console.log('Stopping detection - too many consecutive misses');
                     break;
                 }
             }
